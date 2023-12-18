@@ -7,8 +7,6 @@ import (
 	"log"
 	"net/http"
 	"notes/gates/storage"
-	"notes/gates/storage/list"
-	"notes/gates/storage/mp"
 	"notes/models/dto"
 	"notes/pkg"
 	"strconv"
@@ -19,12 +17,19 @@ type Controller struct {
 	stor storage.Storage
 }
 
-func NewController(addr string, storType string) (hs *Controller) {
+func NewController(addr string, st storage.Storage) (hs *Controller) {
 	hs = new(Controller)
 	hs.srv = http.Server{}
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/save", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
 		if r.Method != http.MethodPost {
 			log.Println("Method Not Allowed", http.StatusMethodNotAllowed)
 			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
@@ -33,6 +38,13 @@ func NewController(addr string, storType string) (hs *Controller) {
 		hs.NoteSaveHandler(w, r)
 	})
 	mux.HandleFunc("/read", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
 		if r.Method != http.MethodPost {
 			log.Println("Method Not Allowed", http.StatusMethodNotAllowed)
 			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
@@ -41,6 +53,13 @@ func NewController(addr string, storType string) (hs *Controller) {
 		hs.NoteReadHandler(w, r)
 	})
 	mux.HandleFunc("/update", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
 		if r.Method != http.MethodPost {
 			log.Println("Method Not Allowed", http.StatusMethodNotAllowed)
 			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
@@ -49,6 +68,13 @@ func NewController(addr string, storType string) (hs *Controller) {
 		hs.NoteUpdateHandler(w, r)
 	})
 	mux.HandleFunc("/delete", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
 		if r.Method != http.MethodPost {
 			log.Println("Method Not Allowed", http.StatusMethodNotAllowed)
 			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
@@ -56,12 +82,10 @@ func NewController(addr string, storType string) (hs *Controller) {
 		}
 		hs.NoteDeleteHandler(w, r)
 	})
+
 	hs.srv.Handler = mux
 	hs.srv.Addr = addr
-	if storType == "list" {
-		hs.stor = list.NewList()
-	}
-	hs.stor = mp.NewMap()
+	hs.stor = st
 	return hs
 }
 
@@ -110,10 +134,6 @@ func (hs *Controller) NoteSaveHandler(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 	index, err := hs.stor.Add(note)
-	if index != 0 {
-		index -= 1
-	}
-	// fmt.Println("New index --> " + strconv.FormatInt(index+index, 10)) /////////////////////////
 	if err != nil {
 		e := myErr.Wrap(err, "")
 		response.Result = "Error"
@@ -185,8 +205,8 @@ func (hs *Controller) NoteReadHandler(w http.ResponseWriter, req *http.Request) 
 			w.Write(json.RawMessage(`{"result":"Error","data":{},"error":"` + erro.Error() + `"}`))
 			return
 		}
-		w.Write(js) //////////////////////////////////////////
-		log.Println(e.Error()) ///////////////////////////////
+		log.Println(e.Error())
+		w.Write(js)
 		return
 	}
 
@@ -243,7 +263,7 @@ func (hs *Controller) NoteUpdateHandler(w http.ResponseWriter, req *http.Request
 	}
 
 	var requestData struct {
-		Index int64    `json:"index"`
+		Index int64    `json:"index,string"`
 		Data  dto.Note `json:"data"`
 	}
 
@@ -325,12 +345,6 @@ func (hs *Controller) NoteUpdateHandler(w http.ResponseWriter, req *http.Request
 		w.Write(js)
 		log.Println(e.Error())
 		return
-	}
-	if index == 1 {
-		log.Println("YAYAYAYAYA HOW&!&!&!&!&!")
-	}
-	if index != 0 {
-		index -= 1
 	}
 
 	hs.stor.RemoveByIndex(requestData.Index)

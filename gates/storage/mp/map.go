@@ -8,7 +8,6 @@ import (
 )
 
 type Mp struct {
-	
 	body map[int64]interface{}
 	mtx  sync.RWMutex
 }
@@ -29,8 +28,9 @@ func (m *Mp) Add(data interface{}) (key int64, e error) {
 	if tp != reflect.TypeOf(data) {
 		return -1, storage.ErrMismatchType
 	}
-	m.body[int64(len(m.body))] = data
-	return int64(len(m.body)), nil
+	index := int64(len(m.body))
+	m.body[index] = data
+	return index, nil
 }
 
 func (m *Mp) Print() {

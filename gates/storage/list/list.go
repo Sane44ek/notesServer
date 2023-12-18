@@ -34,14 +34,14 @@ func (l *List) Add(data interface{}) (id int64, e error) {
 	if tp != reflect.TypeOf(data) {
 		return -1, storage.ErrMismatchType
 	}
-	id = 1
+	id = 0
 	for ; nod.next != nil; nod = nod.next {
-		id++
+		id = nod.next.index
 	}
 	nod.next = newNode
-	nod.next.index = id
+	nod.next.index = id + 1
 	l.len++
-	return id, nil
+	return id + 1, nil
 }
 
 func (l *List) Print() {
@@ -83,32 +83,51 @@ func (l *List) RemoveByIndex(id int64) {
 		fmt.Println("no data")
 		return
 	}
-	if id == 0 {
+	if id == l.firstNode.index {
 		if l.len > 1 {
 			l.firstNode = l.firstNode.next
-			l.refresh_indices()
+			l.len--
+			// l.refresh_indices()
 			return
 		}
 		if l.len == 1 {
+
+			l.firstNode = nil
+			l.len = 0
+
 			l = &List{len: 0, firstNode: nil}
-			l.refresh_indices()
+			// l.refresh_indices()
 			return
 		}
 	}
-	if id >= l.len {
-		fmt.Println("index out of range")
-		return
-	}
+
 	if id < 0 {
 		fmt.Println("give positive index")
 		return
 	}
 
-	del_nod := l.find_node(id)
-	prev_nod := l.find_node(id - 1)
+	var del_nod *node
+	flag := false
+	for nod := l.firstNode; nod != nil; nod = nod.next {
+		if nod.index == id {
+			del_nod = nod
+			flag = true
+		}
+	}
+	if !flag {
+		return
+	}
+
+	var prev_nod *node
+	for nod := l.firstNode; nod != nil; nod = nod.next {
+		if nod.next == del_nod {
+			prev_nod = nod
+			break
+		}
+	}
 	prev_nod.next = del_nod.next
 	l.len--
-	l.refresh_indices()
+	// l.refresh_indices()
 }
 
 // RemoveByValue удаляет элемент из списка по значению

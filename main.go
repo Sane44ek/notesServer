@@ -4,10 +4,13 @@ import (
 	"flag"
 	"log"
 	"notes/controller/stdhttp"
+	"notes/gates/storage"
+	"notes/gates/storage/list"
+	"notes/gates/storage/mp"
 )
 
 func main() {
-	var st string
+	var st storage.Storage
 	// Определение флагов
 	flagList := flag.Bool("l", false, "Use list storage")
 	flagMap := flag.Bool("m", false, "Use map storage")
@@ -31,10 +34,10 @@ func main() {
 
 	// Проверка значений флагов
 	if *flagList {
-		st = "list" ////////////////////////////////////////// норм
+		st = list.NewList()
 	}
 	if *flagMap {
-		st = "map"
+		st = mp.NewMap()
 	}
 	hs := stdhttp.NewController(":4040", st)
 	hs.Start()
